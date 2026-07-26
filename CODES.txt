@@ -1,0 +1,146 @@
+import cv2 
+import pyttsx3 
+ 
+# Initialize voice engine 
+engine = pyttsx3.init() 
+ 
+# Store previous detected color 
+last_color = "" 
+ 
+# Function to detect color 
+def detect_color(r, g, b): 
+ 
+    if r > 150 and g < 100 and b < 100: 
+        return "RED", (0, 0, 255) 
+ 
+    elif g > 150 and r < 100 and b < 100: 
+        return "GREEN", (0, 255, 0) 
+ 
+    elif b > 150 and r < 100 and g < 100: 
+        return "BLUE", (255, 0, 0) 
+ 
+    elif r > 150 and g > 150 and b < 100: 
+ 
+        return "YELLOW", (0, 255, 255) 
+ 
+    elif r > 150 and g > 150 and b > 150: 
+        return "WHITE", (255, 255, 255) 
+ 
+    elif r < 50 and g < 50 and b < 50: 
+        return "BLACK", (80, 80, 80) 
+ 
+    else: 
+        return "UNKNOWN", (255, 0, 255) 
+ 
+ 
+# Open webcam 
+cap = cv2.VideoCapture(0) 
+ 
+# Check camera 
+if not cap.isOpened(): 
+    print("Cannot open camera") 
+    exit() 
+ 
+while True: 
+ 
+    ret, frame = cap.read() 
+ 
+    if not ret: 
+        print("Failed to access camera") 
+        break 
+ 
+    # Get frame dimensions 
+    height, width, _ = frame.shape 
+ 
+    # Bigger center box 
+    box_size = 150 
+ 
+    x1 = width // 2 - box_size 
+    y1 = height // 2 - box_size 
+ 
+    x2 = width // 2 + box_size 
+    y2 = height // 2 + box_size 
+ 
+    # Draw detection box 
+    cv2.rectangle(frame, 
+                  (x1, y1), 
+                  (x2, y2), 
+                  (0, 255, 0), 
+                  3) 
+ 
+    # Region inside box 
+ 
+    roi = frame[y1:y2, x1:x2] 
+ 
+    # Calculate average BGR values 
+    avg_color = roi.mean(axis=0).mean(axis=0) 
+ 
+    blue = int(avg_color[0]) 
+    green = int(avg_color[1]) 
+    red = int(avg_color[2]) 
+ 
+    # Detect color 
+    color_name, text_color = detect_color(red, green, blue) 
+ 
+    # Speak only when color changes 
+    if color_name != last_color and color_name != "UNKNOWN": 
+ 
+        print("Detected:", color_name) 
+ 
+        engine.stop() 
+ 
+        engine.say(f"Detected color is {color_name}") 
+        engine.runAndWait() 
+ 
+        last_color = color_name 
+ 
+
+    # RGB text 
+    rgb_text = f"R:{red} G:{green} B:{blue}" 
+ 
+    cv2.putText(frame, 
+                rgb_text, 
+                (40, 110), 
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                0.8, 
+                (255, 255, 255), 
+                2) 
+ 
+    # Display detected color name 
+    cv2.putText(frame, 
+                f"COLOR: {color_name}", 
+                (40, 60), 
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                1.2, 
+                text_color, 
+                3) 
+ 
+    # Project title 
+    cv2.putText(frame, 
+                "SMART COLOR DETECTOR", 
+                (40, 420), 
+
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                0.9, 
+                (0, 255, 255), 
+                2) 
+ 
+    # Exit instruction 
+    cv2.putText(frame, 
+                "Press Q to Exit", 
+                (40, 460), 
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                0.7, 
+                (200, 200, 200), 
+                2) 
+ 
+    # Show webcam window 
+    cv2.imshow("Smart Color Detector", frame) 
+ 
+    # Quit on Q 
+    if cv2.waitKey(1) & 0xFF == ord('q'): 
+        break 
+ 
+# Release everything 
+cap.release() 
+cv2.destroyAllWindows()
